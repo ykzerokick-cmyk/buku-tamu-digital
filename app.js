@@ -395,12 +395,13 @@ function renderTable() {
   filtered.slice(start, start + logRowsPerPage).forEach((x, i) => {
     const statusGedung = x.statusKeluar === "Di Dalam Gedung";
     
+    // PENYESUAIAN: Menggunakan class badge-status-out jika tamu sudah check-out
     const badgeStatusTerbaru = statusGedung
-      ? `<span class="badge-status" style="color:#00f2fe; border-color:#00f2fe; font-size:10px; padding:2px 6px;">INSIDE</span>`
-      : `<span class="badge-status" style="color:var(--text-muted); border-color:rgba(255,255,255,0.1); font-size:10px; padding:2px 6px;">OUT</span>`;
+      ? `<span class="badge-status">INSIDE</span>`
+      : `<span class="badge-status-out">OUT</span>`;
 
     const aksiCheckOutButton = statusGedung
-      ? `<button class="btn btn-emerald btn-action-sm" onclick="prosesCheckOut(${x.id})" style="background:#10b981; color:#000;" title="Check-Out Tamu Sekarang"><i class="fas fa-door-open"></i> Keluar</button>`
+      ? `<button class="btn btn-emerald btn-action-sm" onclick="prosesCheckOut(${x.id})" title="Check-Out Tamu Sekarang"><i class="fas fa-door-open"></i> Keluar</button>`
       : `<button class="btn btn-blur btn-action-sm" disabled style="opacity:0.3; cursor:not-allowed;"><i class="fas fa-check-double"></i> Selesai</button>`;
 
     tbody.innerHTML += `
