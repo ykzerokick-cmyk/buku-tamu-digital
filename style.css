@@ -656,15 +656,28 @@ body {
   background: rgba(255,255,255,0.01); 
 }
 
+/* Status Tamu Aktif (Masih di dalam gedung) */
 .badge-status { 
   padding: 4px 10px; 
   border-radius: 20px; 
   font-size: 11px; 
   font-weight: 600; 
   display: inline-block; 
-  background: rgba(255,255,255,0.05); 
-  border: 1px solid var(--border-glass); 
-  color: var(--secondary-neon);
+  background: rgba(0, 242, 254, 0.08); 
+  border: 1px solid rgba(0, 242, 254, 0.3); 
+  color: var(--primary-neon);
+}
+
+/* MODIFIKASI: Status Tamu Selesai (Sudah Check-Out) */
+.badge-status-out {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
 }
 
 /* ELEMENTS INPUT & BUTTONS */
@@ -745,8 +758,13 @@ body {
 
 .btn-emerald { 
   background: var(--success-neon); 
-  color: #000; 
+  color: #fff; 
   font-weight: 700; 
+}
+
+.btn-emerald:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-action-sm { 
