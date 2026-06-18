@@ -17,26 +17,26 @@
     <h1>BUKU TAMU</h1>
     <p>Visitor Management System Portal</p>
     
-    <div class="err-msg" id="errMsg">
+    <div class="err-msg" id="loginErrorMsg">
       <i class="fas fa-triangle-exclamation"></i> Kredensial akun tidak cocok.
     </div>
     
     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px; margin-bottom: 5px;">
-      <button id="btnPilihTamu" class="btn-login" style="background: var(--primary-neon); color: #000;">
+      <button id="btnPilihTamu" class="btn-login" onclick="loginAsGuest()" style="background: var(--primary-neon); color: #000;">
         <i class="fas fa-user-plus"></i> Masuk Sebagai Tamu
       </button>
-      <button id="btnPilihAdmin" class="btn-login" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+      <button id="btnPilihAdmin" class="btn-login" onclick="document.getElementById('formAdminWrapper').style.display='block'; document.getElementById('loginErrorMsg').style.display='none';" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
         <i class="fas fa-user-gear"></i> Sistem Management Admin
       </button>
     </div>
 
     <div id="formAdminWrapper" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-      <form id="loginForm">
+      <form id="loginForm" onsubmit="event.preventDefault(); verifyAdminLogin();">
         <div class="form-group">
           <label>Kata Sandi Otentikasi Admin</label>
           <div class="input-wrap">
             <i class="fas fa-key"></i>
-            <input type="password" id="loginPass" placeholder="Masukkan password admin">
+            <input type="password" id="adminPassword" placeholder="Masukkan password admin">
           </div>
         </div>
         <button type="submit" class="btn-login" style="width: 100%;">Otentikasi Masuk <i class="fas fa-arrow-right"></i></button>
@@ -56,14 +56,14 @@
       
       <nav class="sidebar-nav" id="sidebarNav">
         <div class="nav-label">Core Dashboard</div>
-        <div class="nav-item active" onclick="nav('dashboard',this)"><i class="fas fa-chart-line"></i> Analytics Console</div>
+        <div class="nav-item active" onclick="switchPage('dashboard')"><i class="fas fa-chart-line"></i> Analytics Console</div>
         
         <div class="nav-label">Data Management</div>
-        <div class="nav-item" onclick="nav('tambah',this)"><i class="fas fa-user-plus"></i> Check-In Tamu</div>
-        <div class="nav-item" onclick="nav('daftar',this)"><i class="fas fa-address-book"></i> Log Database <span class="nav-badge" id="totalBadge">0</span></div>
+        <div class="nav-item" onclick="switchPage('tambah')"><i class="fas fa-user-plus"></i> Check-In Tamu</div>
+        <div class="nav-item" onclick="switchPage('history')"><i class="fas fa-address-book"></i> Log Database <span class="nav-badge" id="statTotalTamu">0</span></div>
         
         <div class="nav-label">Arsip & Analisis</div>
-        <div class="nav-item" onclick="nav('laporan',this)"><i class="fas fa-file-invoice"></i> Export Laporan</div>
+        <div class="nav-item" onclick="switchPage('laporan')"><i class="fas fa-file-invoice"></i> Export Laporan</div>
       </nav>
       
       <div class="sidebar-footer">
@@ -78,12 +78,12 @@
         </div>
 
         <div class="user-profile">
-          <div class="u-avatar">AD</div>
+          <div class="u-avatar">U</div>
           <div class="u-info">
-            <div class="u-name">Administrator</div>
-            <div class="u-status" id="footerStatus">🟢 Active Session</div>
+            <div class="u-name" id="userProfileName">Administrator</div>
+            <div class="u-status" id="userProfileStatus">🟢 Active Session</div>
           </div>
-          <button class="btn-power" onclick="doLogout()" title="Log Out"><i class="fas fa-sign-out-alt"></i></button>
+          <button class="btn-power" onclick="logoutSystem()" title="Log Out"><i class="fas fa-sign-out-alt"></i></button>
         </div>
       </div>
     </aside>
@@ -110,19 +110,19 @@
 
         <div id="mainContentArea">
           
-          <div class="page active" id="p-dashboard">
+          <div class="page active" id="dashboard">
             <div class="stat-grid">
               <div class="stat-card cyan">
                 <div class="sc-icon"><i class="fas fa-fingerprint"></i></div>
-                <div class="sc-info"><span id="s-total">0</span><label>Total Kunjungan</label></div>
+                <div class="sc-info"><span id="statTotalTamu">0</span><label>Total Kunjungan</label></div>
               </div>
               <div class="stat-card purple">
                 <div class="sc-icon"><i class="fas fa-bolt-lightning"></i></div>
-                <div class="sc-info"><span id="s-today">0</span><label>Hadir Hari Ini</label></div>
+                <div class="sc-info"><span id="statTamuHariIni">0</span><label>Hadir Hari Ini</label></div>
               </div>
               <div class="stat-card pink">
                 <div class="sc-icon"><i class="fas fa-building"></i></div>
-                <div class="sc-info"><span id="s-inst">0</span><label>Mitra Instansi</label></div>
+                <div class="sc-info"><span>3</span><label>Mitra Instansi</label></div>
               </div>
             </div>
 
@@ -136,114 +136,85 @@
                 <div class="gc-body"><div class="donut-wrap" id="donutWrap"></div></div>
               </div>
             </div>
-
-            <div class="glass-card">
-              <div class="gc-header">Log Aktivitas Terbaru</div>
-              <div class="gc-body" style="padding:0;">
-                <table class="premium-table">
-                  <thead><tr><th>Nama Pengunjung</th><th>Asal Instansi</th><th>Keperluan</th><th>Waktu Masuk</th></tr></thead>
-                  <tbody id="recentBody"></tbody>
-                </table>
-              </div>
-            </div>
           </div>
 
-          <div class="page" id="p-tambah">
+          <div class="page" id="tambah">
             <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
-              <div class="gc-header" id="formTitle">Formulir Digital Check-In</div>
+              <div class="gc-header">Formulir Digital Check-In</div>
               <div class="gc-body">
-                <input type="hidden" id="editId">
-                <div class="form-layout-grid">
-                  <div class="fg"><label>Nama Lengkap Visitor *</label><input type="text" class="inp" id="f-nama" placeholder="Sesuai kartu identitas"></div>
-                  <div class="fg"><label>Nomor KTP / NIK</label><input type="text" class="inp" id="f-nik" placeholder="3402xxxxxxxx"></div>
-                  <div class="fg"><label>Kontak WhatsApp *</label><input type="tel" class="inp" id="f-telepon" placeholder="08xxxxxxxxxx"></div>
-                  <div class="fg"><label>Perusahaan / Instansi Asal *</label><input type="text" class="inp" id="f-instansi" placeholder="Cth: PT Tech Indonesia"></div>
-                  <div class="fg">
-                    <label>Tujuan & Keperluan *</label>
-                    <select class="sel" id="f-keperluan">
-                      <option value="">-- Pilih Kategori --</option><option>Kunjungan Resmi</option><option>Urusan Administrasi</option><option>Rapat / Meeting</option><option>Konsultasi</option><option>Lainnya</option>
-                    </select>
-                  </div>
-                  <div class="fg"><label>Tanggal & Waktu</label><input type="datetime-local" class="inp" id="f-waktu"></div>
-                  
-                  <div class="fg" style="grid-column: span 2;">
-                    <label>Dokumentasi Visual Visitor (Foto Wajah / ID)</label>
-                    <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
-                      <div style="position: relative; width: 220px; height: 165px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                        <video id="webcam" autoplay playsinline width="220" height="165" style="object-fit: cover; transform: scaleX(-1);"></video>
-                        <canvas id="photoCanvas" width="220" height="165" style="display: none; position: absolute; top: 0; left: 0;"></canvas>
-                      </div>
-                      
-                      <div style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">
-                        <div style="display: flex; gap: 6px;">
-                          <button type="button" class="btn btn-blur" onclick="aktifkanKamera()" style="padding: 6px 12px; font-size: 12px;"><i class="fas fa-camera"></i> Buka Kamera</button>
-                          <button type="button" class="btn btn-glow" onclick="ambilFoto()" style="padding: 6px 12px; font-size: 12px; background: #00f2fe; color: #000;"><i class="fas fa-circle"></i> Ambil Rana</button>
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-muted);">Atau unggah berkas manual:</div>
-                        <input type="file" id="f-berkas-foto" accept="image/*" onchange="konversiBerkasKeBase64(this)" style="font-size: 12px; color: var(--text-muted);">
-                        <input type="hidden" id="f-string-foto">
-                      </div>
+                <form id="guestForm" onsubmit="handleGuestCheckIn(event)">
+                  <div class="form-layout-grid">
+                    <div class="fg"><label>Nama Lengkap Visitor *</label><input type="text" class="inp" id="guestName" placeholder="Sesuai kartu identitas" required></div>
+                    <div class="fg"><label>Perusahaan / Instansi Asal *</label><input type="text" class="inp" id="guestCompany" placeholder="Cth: PT Tech Indonesia" required></div>
+                    <div class="fg">
+                      <label>Tujuan & Keperluan *</label>
+                      <select class="sel" id="guestPurpose" required>
+                        <option value="">-- Pilih Kategori --</option>
+                        <option value="Kunjungan Resmi">Kunjungan Resmi</option>
+                        <option value="Urusan Administrasi">Urusan Administrasi</option>
+                        <option value="Rapat / Meeting">Rapat / Meeting</option>
+                        <option value="Konsultasi">Konsultasi</option>
+                        <option value="Lainnya">Lainnya</option>
+                      </select>
                     </div>
                   </div>
-                </div>
-                <div class="form-buttons">
-                  <button class="btn btn-glow" onclick="simpanTamu()"><i class="fas fa-circle-check"></i> Proses Registrasi</button>
-                  <button class="btn btn-blur" onclick="resetForm()">Kosongkan Form</button>
+                  <div class="form-buttons">
+                    <button type="submit" class="btn btn-glow"><i class="fas fa-circle-check"></i> Proses Registrasi (Check-In)</button>
+                    <button type="reset" class="btn btn-blur">Kosongkan Form</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="page" id="history">
+            <div class="glass-card">
+              <div class="gc-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-history"></i> Log Kunjungan Monitor Utama</span>
+                <button class="btn btn-blur btn-action-sm" onclick="triggerPrintReport()">
+                  <i class="fas fa-print"></i> Cetak Laporan
+                </button>
+              </div>
+              <div class="gc-body">
+                <div style="overflow-x: auto;">
+                  <table class="premium-table">
+                    <thead>
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Tamu</th>
+                        <th>Instansi / Perusahaan</th>
+                        <th>Keperluan</th>
+                        <th>Tanggal</th>
+                        <th>Waktu Masuk</th>
+                        <th>Waktu Keluar</th>
+                        <th>Status</th>
+                        <th>Aksi Admin</th> </tr>
+                    </thead>
+                    <tbody id="guestTableBody">
+                      </tbody>
+                  </table>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="page" id="p-daftar">
-            <div class="filter-action-bar">
-              <div class="search-premium"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchInput" placeholder="Cari berdasarkan nama atau instansi..." oninput="renderTable()"></div>
-            </div>
-            <div class="glass-card" style="overflow: hidden;">
-              <div style="overflow-x: auto;">
-                <table class="premium-table">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Nama / Status Durasi</th>
-                      <th>Instansi</th>
-                      <th>Keperluan</th>
-                      <th>Kontak</th>
-                      <th>Aksi Operator</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tableBody"></tbody>
-                </table>
-              </div>
-              <div class="table-footer-pagination">
-                <div id="pageInfo"></div><div id="pageBtns" class="btn-group-page"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="page" id="p-laporan">
+          <div class="page" id="laporan">
             <div class="glass-card" style="margin-bottom: 25px;">
               <div class="gc-header">Filter Parameter Cetak Laporan</div>
               <div class="gc-body">
                 <div class="filter-flex-row">
                   <div class="fg"><label>Mulai Tanggal</label><input type="date" class="inp" id="lap-dari"></div>
                   <div class="fg"><label>Sampai Tanggal</label><input type="date" class="inp" id="lap-sampai"></div>
-                  <button class="btn btn-glow" onclick="filterLaporan()"><i class="fas fa-filter"></i> Saring</button>
-                  <button class="btn btn-emerald" onclick="cetakLaporan()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+                  <button class="btn btn-glow"><i class="fas fa-filter"></i> Saring</button>
+                  <button class="btn btn-emerald" onclick="triggerPrintReport()"><i class="fas fa-file-pdf"></i> Export PDF / Cetak</button>
                 </div>
               </div>
             </div>
-            <div class="glass-card"><table class="premium-table"><tbody id="laporanBody"></tbody></table></div>
           </div>
 
-        </div> </div>
+        </div> 
+      </div>
     </main>
-  </div>
-</div>
-
-<div class="modal-overlay" id="detailModal">
-  <div class="modal-box">
-    <div class="mb-header"><h3>Informasi Rinci Visitor</h3><button onclick="closeModal()">&times;</button></div>
-    <div class="mb-body" id="modalContent"></div>
   </div>
 </div>
 
