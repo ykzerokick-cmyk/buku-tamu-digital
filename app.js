@@ -37,14 +37,14 @@ let logCurrentPage = 1;
 const logRowsPerPage = 6;
 let isServerOnline = true; 
 let cameraStream = null;  
-let currentRole = null; // Menyimpan peran aktif: 'tamu' atau 'admin'
+let currentRole = null; 
 
 document.addEventListener("DOMContentLoaded", () => {
   const dateElement = document.getElementById('dateNow');
   if(dateElement) {
     dateElement.innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
-  initGatewayPortal(); // Inisialisasi gerbang login ganda awal
+  initGatewayPortal(); 
 });
 
 // ==========================================================================
@@ -56,24 +56,20 @@ function initGatewayPortal() {
   const formAdminWrapper = document.getElementById("formAdminWrapper");
   const loginForm = document.getElementById("loginForm");
   
-  // A. KLIEN MEMILIH SEBAGAI TAMU UMUM
   if (btnPilihTamu) {
     btnPilihTamu.addEventListener("click", () => {
       currentRole = "tamu";
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
       
-      // Sembunyikan navigasi manajemen admin agar tidak dimanipulasi tamu
       const sidebar = document.getElementById('sidebarNav') || document.querySelector('.sidebar');
       if (sidebar) sidebar.style.display = "none";
       
-      // Paksa langsung arahkan ke halaman input check-in formulir
       nav('tambah');
       pushToast('Selamat Datang! Silakan lengkapi formulir kedatangan Anda.');
     });
   }
 
-  // B. KLIEN MEMILIH SEBAGAI MANAGEMENT ADMIN
   if (btnPilihAdmin) {
     btnPilihAdmin.addEventListener("click", () => {
       if (formAdminWrapper) formAdminWrapper.style.display = "block";
@@ -82,7 +78,6 @@ function initGatewayPortal() {
     });
   }
 
-  // C. VALIDASI KUNCI KEAMANAN DASHBOARD ADMIN
   if (loginForm) {
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -93,7 +88,6 @@ function initGatewayPortal() {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
         
-        // Tampilkan kembali sidebar penuh fitur
         const sidebar = document.getElementById('sidebarNav') || document.querySelector('.sidebar');
         if (sidebar) sidebar.style.display = "flex";
         
@@ -108,7 +102,7 @@ function initGatewayPortal() {
   }
 }
 
-// ROUTING SCREEN CORE ENGINE (MODIFIED)
+// ROUTING SCREEN CORE ENGINE
 function nav(targetView, element) {
   if(!isServerOnline) return; 
   
@@ -139,7 +133,6 @@ function nav(targetView, element) {
 
 function doLogout() {
   matikanKamera();
-  // Muat ulang halaman total untuk mengembalikan status portal login ke awal semula
   location.reload();
 }
 
@@ -205,20 +198,21 @@ function konversiBerkasKeBase64(input) {
     reader.onload = function(e) {
       if(hiddenInput) hiddenInput.value = e.target.result;
       const canvas = document.getElementById('photoCanvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.onload = function() {
-        canvas.style.display = 'block';
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if(canvas) {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = function() {
+          canvas.style.display = 'block';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+        img.src = e.target.result;
       }
-      img.src = e.target.result;
       pushToast("Berkas dokumen foto berhasil dimuat.");
     }
     reader.readAsDataURL(file);
   }
 }
 
-// PERSISTENCE OPERASIONAL: TAMBAH & EDIT 
 function simpanTamu() {
   const id = document.getElementById('editId').value;
   const nama = document.getElementById('f-nama').value;
@@ -250,7 +244,8 @@ function simpanTamu() {
   };
 
   if(id) {
-    databaseTamu[databaseTamu.findIndex(x => x.id === parseInt(id))] = payload;
+    const targetIdx = databaseTamu.findIndex(x => x.id === parseInt(id));
+    if(targetIdx !== -1) databaseTamu[targetIdx] = payload;
     pushToast('Modifikasi profil visitor berhasil disinkronkan.');
   } else {
     databaseTamu.unshift(payload);
@@ -260,16 +255,15 @@ function simpanTamu() {
   localStorage.setItem('pro_vms_db', JSON.stringify(databaseTamu));
   resetForm();
 
-  // JALUR SINKRONISASI SETELAH SIMPAN
   if (currentRole === "tamu") {
     pushToast("Terima kasih, data Anda telah terekam. Layanan Dialihkan.");
     setTimeout(() => { location.reload(); }, 2500);
   } else {
-    nav('daftar', document.querySelectorAll('.nav-item')[2]);
+    const navItems = document.querySelectorAll('.nav-item');
+    if(navItems.length >= 3) nav('daftar', navItems[2]);
   }
 }
 
-// HARDWARE SWITCH CONTROL
 function toggleServerHardware() {
   const label = document.getElementById('serverStatusLabel');
   const btn = document.getElementById('btnToggleServer');
@@ -281,7 +275,7 @@ function toggleServerHardware() {
   if (isServerOnline) {
     isServerOnline = false;
     if(label) { label.innerText = "OFFLINE"; label.style.color = "var(--danger-neon)"; }
-    if(btn) { btn.innerHTML = `<i class="fas fa-play"></i> Jalankan Server`; btn.style.background = "var(--success-neon)"; }
+    if(btn) { btn.innerHTML = `<i class="fas fa-play"></i> Jalankan Server`; btn.style.background = "var(--success-neon)"; btn.style.color = "#000"; }
     if(contentArea) contentArea.style.display = "none";
     if(offlineBlocker) offlineBlocker.style.display = "block";
     if(sidebarNav) { sidebarNav.style.pointerEvents = "none"; sidebarNav.style.opacity = "0.2"; }
@@ -291,17 +285,16 @@ function toggleServerHardware() {
   } else {
     isServerOnline = true;
     if(label) { label.innerText = "ONLINE"; label.style.color = "var(--success-neon)"; }
-    if(btn) { btn.innerHTML = `<i class="fas fa-power-off"></i> Matikan Server`; btn.style.background = "var(--danger-neon)"; }
+    if(btn) { btn.innerHTML = `<i class="fas fa-power-off"></i> Matikan Server`; btn.style.background = "rgba(255,255,255,0.05)"; btn.style.color = "var(--danger-neon)"; }
     if(contentArea) contentArea.style.display = "block";
     if(offlineBlocker) offlineBlocker.style.display = "none";
     if(sidebarNav) { sidebarNav.style.pointerEvents = "auto"; sidebarNav.style.opacity = "1"; }
-    if(footerStatus) { footerStatus.innerText = "🟢 Active Session"; footerStatus.style.color = "var(--success-neon)"; }
+    if(footerStatus) { footerStatus.innerText = "🟢 Active Session Security Checked"; footerStatus.style.color = "var(--success-neon)"; }
     pushToast("Sukses: Sistem database kembali online.");
     initDashboard();
   }
 }
 
-// CHECK-OUT MANAGEMENT
 function prosesCheckOut(id) {
   const idx = databaseTamu.findIndex(x => x.id === id);
   if(idx !== -1) {
@@ -352,14 +345,17 @@ function editTamu(id) {
   
   if(target.foto) {
     const canvas = document.getElementById('photoCanvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = function() { canvas.style.display = 'block'; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); }
-    img.src = target.foto;
+    if(canvas) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = function() { canvas.style.display = 'block'; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); }
+      img.src = target.foto;
+    }
   }
   
   document.getElementById('formTitle').innerText = "Update Log Desk Check-In";
-  nav('tambah', document.querySelectorAll('.nav-item')[1]);
+  const navItems = document.querySelectorAll('.nav-item');
+  if(navItems.length >= 2) nav('tambah', navItems[1]);
 }
 
 function resetForm() {
@@ -395,7 +391,6 @@ function renderTable() {
   filtered.slice(start, start + logRowsPerPage).forEach((x, i) => {
     const statusGedung = x.statusKeluar === "Di Dalam Gedung";
     
-    // PENYESUAIAN: Menggunakan class badge-status-out jika tamu sudah check-out
     const badgeStatusTerbaru = statusGedung
       ? `<span class="badge-status">INSIDE</span>`
       : `<span class="badge-status-out">OUT</span>`;
@@ -440,7 +435,6 @@ function renderTable() {
 
 function jumpPage(p) { logCurrentPage = p; renderTable(); }
 
-// LOOK DETAIL VISITOR
 function lihatDetail(id) {
   const t = databaseTamu.find(x => x.id === id); if(!t) return;
   
@@ -472,7 +466,6 @@ function lihatDetail(id) {
 }
 function closeModal() { document.getElementById('detailModal').classList.remove('open'); }
 
-// STATISTIK DASHBOARD ANALYTICS
 function initDashboard() {
   const len = databaseTamu.length;
   const sTotal = document.getElementById('s-total');
@@ -483,7 +476,6 @@ function initDashboard() {
   if(sInst) sInst.innerText = [...new Set(databaseTamu.map(x => x.instansi.toLowerCase()))].length;
   if(sToday) sToday.innerText = databaseTamu.filter(x => x.waktu.startsWith(new Date().toISOString().slice(0, 10))).length;
 
-  // TRAFIK CHART
   const bc = document.getElementById('chartBars'); 
   const lc = document.getElementById('chartLabels'); 
   if(bc && lc) {
@@ -496,7 +488,6 @@ function initDashboard() {
     });
   }
 
-  // DONUT GRAPH MATRIX
   const dw = document.getElementById('donutWrap');
   if(dw) {
     let seg = {}; databaseTamu.forEach(x => seg[x.keperluan] = (seg[x.keperluan] || 0) + 1);
@@ -512,7 +503,6 @@ function initDashboard() {
     dw.innerHTML = svg + `</svg>` + leg + `</div>`;
   }
 
-  // RECENT VISITORS
   const rb = document.getElementById('recentBody'); 
   if(rb) {
     rb.innerHTML = "";
@@ -522,14 +512,13 @@ function initDashboard() {
   }
 }
 
-// REPORT & EXPORT DOCUMENT
 let filteredReportData = [];
 function filterLaporan() {
   const d = document.getElementById('lap-dari').value; const s = document.getElementById('lap-sampai').value;
   filteredReportData = databaseTamu.filter(x => (!d || x.waktu.slice(0,10) >= d) && (!s || x.waktu.slice(0,10) <= s));
   
   const lb = document.getElementById('laporanBody'); if(!lb) return;
-  lb.innerHTML = "<thead><tr><th>No</th><th>Nama</th><th>Instansi asal</th><th>Keperluan</th></tr></thead>";
+  lb.innerHTML = "<thead><tr><th>No</th><th>Nama</th><th>Instansi Asal</th><th>Keperluan</th></tr></thead>";
   if(filteredReportData.length === 0) { lb.innerHTML += `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted)">Data nihil</td></tr>`; return; }
   filteredReportData.forEach((x, i) => { lb.innerHTML += `<tr><td>${i+1}</td><td><b>${x.nama}</b></td><td>${x.instansi}</td><td>${x.keperluan}</td></tr>`; });
 }
